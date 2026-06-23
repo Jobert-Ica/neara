@@ -15,6 +15,8 @@ type Professional = {
   reviewCount: number;
   yearsExperience: number;
   completedProjects: number;
+  createdAt: Date;
+  verifiedAt?: Date | null;
   user: { name: string | null; image: string | null };
 };
 
