@@ -1,0 +1,532 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  CLIENT
+  PROFESSIONAL
+  ADMIN
+}
+
+enum Profession {
+  ARCHITECT
+  CIVIL_ENGINEER
+  STRUCTURAL_ENGINEER
+  ELECTRICAL_ENGINEER
+  MECHANICAL_ENGINEER
+  CONTRACTOR
+  INTERIOR_DESIGNER
+  LANDSCAPE_ARCHITECT
+  SURVEYOR
+  QUANTITY_SURVEYOR
+  PROJECT_MANAGER
+  CONSTRUCTION_CONSULTANT
+  BUILDING_INSPECTOR
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum DocumentType {
+  PRC_LICENSE
+  GOVERNMENT_ID
+}
+
+enum ProjectStatus {
+  DRAFT
+  OPEN
+  IN_REVIEW
+  MATCHED
+  CLOSED
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+}
+
+enum CreditTransactionType {
+  PURCHASE
+  DEDUCTION
+  REFUND
+  ADMIN_GRANT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum NotificationType {
+  REQUEST_RECEIVED
+  REQUEST_ACCEPTED
+  REQUEST_DECLINED
+  CREDITS_LOW
+  CREDITS_PURCHASED
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  NEW_MESSAGE
+  NEW_REVIEW
+  SYSTEM
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportTargetType {
+  USER
+  PROFESSIONAL
+  PROJECT
+  REVIEW
+  MESSAGE
+}
+
+// ============================================================
+// CORE USER
+// ============================================================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  name          String
+  image         String?
+  role          Role     @default(CLIENT)
+  phone         String?
+  isPhoneVerified Boolean @default(false)
+  isBanned      Boolean  @default(false)
+  bannedReason  String?
+  bannedAt      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Better Auth relations
+  sessions  Session[]
+  accounts  Account[]
+
+  // Profile relations
+  clientProfile       ClientProfile?
+  professionalProfile ProfessionalProfile?
+
+  // Activity
+  sentMessages        Message[]           @relation("MessageSender")
+  notifications       Notification[]
+  reports             Report[]            @relation("Reporter")
+  auditLogs           AuditLog[]          @relation("AuditActor")
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  idToken               String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verifications")
+}
+
+// ============================================================
+// CLIENT PROFILE
+// ============================================================
+
+model ClientProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  province           String?
+  city               String?
+  onboardingComplete Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects Project[]
+
+  @@map("client_profiles")
+}
+
+// ============================================================
+// PROFESSIONAL PROFILE
+// ============================================================
+
+model ProfessionalProfile {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  profession         Profession
+  specialization     String?
+  yearsExperience    Int                @default(0)
+  province           String?
+  city               String?
+  serviceAreas       String[]           @default([])
+  aboutMe            String?            @db.Text
+  profilePhoto       String?
+  coverBanner        String?
+  prcLicenseNumber   String?
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  rejectionReason    String?
+  creditBalance      Int                @default(0)
+  completedProjects  Int                @default(0)
+  responseRate       Float              @default(0)
+  avgResponseHours   Float              @default(0)
+  totalRating        Float              @default(0)
+  reviewCount        Int                @default(0)
+  onboardingComplete Boolean            @default(false)
+  isPublic           Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents        ProfessionalDocument[]
+  portfolioItems   PortfolioItem[]
+  receivedRequests ProjectRequest[]        @relation("ProfessionalRequests")
+  conversations    Conversation[]          @relation("ProfessionalConversations")
+  reviews          Review[]                @relation("ProfessionalReviews")
+  creditTransactions CreditTransaction[]
+  payments         Payment[]
+
+  @@map("professional_profiles")
+}
+
+model ProfessionalDocument {
+  id             String       @id @default(cuid())
+  professionalId String
+  type           DocumentType
+  fileUrl        String
+  fileKey        String
+  fileName       String?
+  fileSize       Int?
+  uploadedAt     DateTime     @default(now())
+  verifiedAt     DateTime?
+  verifiedBy     String?
+
+  professional ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@map("professional_documents")
+}
+
+// ============================================================
+// PORTFOLIO
+// ============================================================
+
+model PortfolioItem {
+  id             String   @id @default(cuid())
+  professionalId String
+  title          String
+  description    String?  @db.Text
+  category       String?
+  coverImage     String?
+  galleryImages  String[] @default([])
+  projectLocation String?
+  completionDate DateTime?
+  isPublished    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  professional ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_items")
+}
+
+// ============================================================
+// PROJECTS & REQUESTS
+// ============================================================
+
+model Project {
+  id          String        @id @default(cuid())
+  clientId    String
+  title       String
+  description String        @db.Text
+  budgetMin   Float?
+  budgetMax   Float?
+  province    String?
+  city        String?
+  timeline    String?
+  attachments String[]      @default([])
+  status      ProjectStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  client   ClientProfile    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  requests ProjectRequest[]
+
+  @@map("projects")
+}
+
+model ProjectRequest {
+  id              String        @id @default(cuid())
+  projectId       String
+  professionalId  String
+  clientUserId    String
+  status          RequestStatus @default(PENDING)
+  message         String?       @db.Text
+  creditsDeducted Int           @default(0)
+  acceptedAt      DateTime?
+  declinedAt      DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  project      Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  professional ProfessionalProfile @relation("ProfessionalRequests", fields: [professionalId], references: [id], onDelete: Cascade)
+  conversation Conversation?
+  review       Review?
+
+  @@unique([projectId, professionalId])
+  @@map("project_requests")
+}
+
+// ============================================================
+// CHAT
+// ============================================================
+
+model Conversation {
+  id             String    @id @default(cuid())
+  requestId      String    @unique
+  clientUserId   String
+  professionalId String
+  lastMessageAt  DateTime?
+  createdAt      DateTime  @default(now())
+
+  request      ProjectRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  professional ProfessionalProfile @relation("ProfessionalConversations", fields: [professionalId], references: [id])
+  messages     Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String?     @db.Text
+  type           MessageType @default(TEXT)
+  fileUrl        String?
+  fileKey        String?
+  fileName       String?
+  fileSize       Int?
+  readAt         DateTime?
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+// ============================================================
+// REVIEWS
+// ============================================================
+
+model Review {
+  id             String   @id @default(cuid())
+  requestId      String   @unique
+  clientUserId   String
+  professionalId String
+  rating         Int      // 1-5
+  comment        String?  @db.Text
+  isVerified     Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  request      ProjectRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  professional ProfessionalProfile @relation("ProfessionalReviews", fields: [professionalId], references: [id])
+
+  @@map("reviews")
+}
+
+// ============================================================
+// CREDITS & PAYMENTS
+// ============================================================
+
+model CreditPackage {
+  id          String   @id @default(cuid())
+  name        String
+  credits     Int
+  pricePhp    Float
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  payments Payment[]
+
+  @@map("credit_packages")
+}
+
+model CreditTransaction {
+  id             String                @id @default(cuid())
+  professionalId String
+  amount         Int                   // positive = credit, negative = debit
+  type           CreditTransactionType
+  description    String?
+  referenceId    String?               // requestId or paymentId
+  balanceBefore  Int
+  balanceAfter   Int
+  createdAt      DateTime              @default(now())
+
+  professional ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@map("credit_transactions")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  professionalId  String
+  creditPackageId String?
+  amount          Float
+  currency        String        @default("PHP")
+  provider        String        @default("XENDIT")
+  providerTxId    String?       @unique
+  providerInvoiceId String?     @unique
+  status          PaymentStatus @default(PENDING)
+  checkoutUrl     String?
+  receiptUrl      String?
+  paidAt          DateTime?
+  failedReason    String?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  professional  ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  creditPackage CreditPackage?      @relation(fields: [creditPackageId], references: [id])
+
+  @@map("payments")
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ============================================================
+// REPORTS & ADMIN
+// ============================================================
+
+model Report {
+  id         String           @id @default(cuid())
+  reporterId String
+  targetId   String
+  targetType ReportTargetType
+  reason     String
+  details    String?          @db.Text
+  status     ReportStatus     @default(OPEN)
+  reviewedBy String?
+  reviewNote String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  reporter User @relation("Reporter", fields: [reporterId], references: [id])
+
+  @@map("reports")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
+}
