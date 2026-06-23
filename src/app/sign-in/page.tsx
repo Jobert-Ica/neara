@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "@/lib/auth-client";
 import { motion } from "framer-motion";
 import { Shield, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 
-export default function SignInPage() {
+function SignInContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -246,5 +246,13 @@ export default function SignInPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", display: "flex", background: "#060d1f" }} />}>
+      <SignInContent />
+    </Suspense>
   );
 }
