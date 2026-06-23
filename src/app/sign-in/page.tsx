@@ -18,12 +18,17 @@ function SignInContent() {
     setLoading(true);
     setError(null);
     try {
-      await signIn.social({
+      const { error } = await signIn.social({
         provider: "google",
         callbackURL: callbackUrl,
       });
-    } catch {
-      setError("Authentication failed. Please try again.");
+      
+      if (error) {
+        setError(error.message || "Authentication failed. Please try again.");
+        setLoading(false);
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
       setLoading(false);
     }
   };
