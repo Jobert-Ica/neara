@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
@@ -249,6 +250,7 @@ model ProfessionalProfile {
   creditTransactions CreditTransaction[]
   payments         Payment[]
 
+  @@index([profession, province, city])
   @@map("professional_profiles")
 }
 
@@ -314,6 +316,7 @@ model Project {
   client   ClientProfile    @relation(fields: [clientId], references: [id], onDelete: Cascade)
   requests ProjectRequest[]
 
+  @@index([status])
   @@map("projects")
 }
 

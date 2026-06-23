@@ -73,12 +73,15 @@ export default function MessagesClient({
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", padding: 24 }}>
         <div style={{ textAlign: "center", maxWidth: 400 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 20, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-            <MessageSquare size={32} style={{ color: "rgba(255,255,255,0.2)" }} />
+          <div style={{ position: "relative", width: 120, height: 120, margin: "0 auto 20px" }}>
+            <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 70%)" }} />
+            <div style={{ width: 80, height: 80, borderRadius: 24, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", margin: "20px auto", position: "relative", zIndex: 1, boxShadow: "0 12px 24px rgba(0,0,0,0.2)" }}>
+              <MessageSquare size={36} style={{ color: "rgba(255,255,255,0.5)" }} />
+            </div>
           </div>
-          <h3 style={{ color: "white", fontSize: 18, fontWeight: 700, margin: "0 0 8px" }}>No conversations yet</h3>
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, margin: 0, lineHeight: 1.5 }}>
-            Conversations will appear here once a professional accepts a project request.
+          <h3 style={{ color: "white", fontSize: 20, fontWeight: 800, margin: "0 0 12px" }}>Your Inbox is Empty</h3>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 15, margin: 0, lineHeight: 1.6 }}>
+            Conversations will appear here once a professional accepts a project request or you send a message.
           </p>
         </div>
       </div>
@@ -200,14 +203,16 @@ export default function MessagesClient({
                     <div style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start", gap: 4 }}>
                       <div
                         style={{
-                          background: isMine ? "#2563EB" : "rgba(255,255,255,0.06)",
+                          background: isMine ? "#2563EB" : "rgba(255,255,255,0.08)",
                           color: "white",
-                          padding: "10px 16px",
-                          borderRadius: 16,
-                          borderBottomRightRadius: isMine ? 4 : 16,
-                          borderBottomLeftRadius: !isMine ? 4 : 16,
+                          padding: "10px 14px",
+                          borderRadius: 20,
+                          borderBottomRightRadius: isMine ? 4 : 20,
+                          borderBottomLeftRadius: !isMine ? 4 : 20,
                           fontSize: 14,
                           lineHeight: 1.5,
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                          position: "relative",
                         }}
                       >
                         {msg.content}
@@ -258,13 +263,24 @@ export default function MessagesClient({
 
           {/* Input */}
           <div style={{ padding: "16px 24px", borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
-            <form onSubmit={handleSend} style={{ display: "flex", gap: 12 }}>
-              <input
-                type="text"
+            <form onSubmit={handleSend} style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
+              <textarea
                 value={input}
-                onChange={handleInput}
+                onChange={(e) => {
+                  handleInput(e as unknown as React.ChangeEvent<HTMLInputElement>);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend(e);
+                    e.currentTarget.style.height = 'auto';
+                  }
+                }}
                 onBlur={() => sendTypingEvent(false)}
                 placeholder="Type a message..."
+                rows={1}
                 style={{
                   flex: 1,
                   background: "rgba(255,255,255,0.04)",
@@ -274,6 +290,11 @@ export default function MessagesClient({
                   color: "white",
                   fontSize: 14,
                   outline: "none",
+                  resize: "none",
+                  minHeight: 44,
+                  maxHeight: 120,
+                  overflowY: "auto",
+                  fontFamily: "inherit",
                 }}
               />
               <button
@@ -291,6 +312,7 @@ export default function MessagesClient({
                   justifyContent: "center",
                   cursor: input.trim() ? "pointer" : "not-allowed",
                   transition: "all 150ms ease",
+                  flexShrink: 0,
                 }}
               >
                 <Send size={18} style={{ marginLeft: 2 }} />

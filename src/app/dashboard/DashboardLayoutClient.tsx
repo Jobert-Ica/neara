@@ -210,14 +210,14 @@ export default function DashboardLayoutClient({
   );
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#060d1f" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "var(--background)" }}>
       {/* Desktop sidebar */}
       <aside
         style={{
           width: 240,
           flexShrink: 0,
-          background: "rgba(255,255,255,0.02)",
-          borderRight: "1px solid rgba(255,255,255,0.05)",
+          background: "var(--background-secondary)",
+          borderRight: "1px solid var(--border-strong)",
           position: "fixed",
           top: 0,
           left: 0,
@@ -252,7 +252,7 @@ export default function DashboardLayoutClient({
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               style={{
                 width: 240,
-                background: "#0f1b3d",
+                background: "var(--background-secondary)",
                 position: "fixed",
                 top: 0,
                 left: 0,
@@ -275,8 +275,8 @@ export default function DashboardLayoutClient({
           left: 0,
           right: 0,
           height: 56,
-          background: "rgba(6,13,31,0.95)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          background: "var(--background)",
+          borderBottom: "1px solid var(--border-strong)",
           backdropFilter: "blur(12px)",
           zIndex: 30,
           alignItems: "center",
@@ -303,7 +303,7 @@ export default function DashboardLayoutClient({
           flex: 1,
           marginLeft: 240,
           minHeight: "100vh",
-          background: "#060d1f",
+          background: "var(--background)",
         }}
         className="dashboard-main"
       >

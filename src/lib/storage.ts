@@ -2,25 +2,25 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } fro
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 
-const r2Client = new S3Client({
-  region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+// Supabase provides an S3-compatible API, so we can use the exact same AWS SDK!
+const s3Client = new S3Client({
+  region: "eu-central-1", // Supabase S3 requires a region string, but ignores the value.
+  endpoint: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/s3`,
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY!,
+    secretAccessKey: process.env.SUPABASE_S3_SECRET_KEY!,
   },
+  forcePathStyle: true, // Required for Supabase S3
 });
 
 export type BucketType = "public" | "private";
 
 function getBucket(type: BucketType): string {
-  return type === "public"
-    ? process.env.R2_BUCKET_PUBLIC!
-    : process.env.R2_BUCKET_PRIVATE!;
+  return type === "public" ? "neara-public" : "neara-private";
 }
 
 export function getPublicUrl(key: string): string {
-  return `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${key}`;
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${getBucket("public")}/${key}`;
 }
 
 export async function generateUploadPresignedUrl(
@@ -39,7 +39,7 @@ export async function generateUploadPresignedUrl(
     ContentType: contentType,
   });
 
-  return getSignedUrl(r2Client, command, { expiresIn: 300 }); // 5 minutes
+  return getSignedUrl(s3Client, command, { expiresIn: 300 }); // 5 minutes
 }
 
 export async function generateDownloadPresignedUrl(
@@ -51,14 +51,14 @@ export async function generateDownloadPresignedUrl(
     Key: key,
   });
 
-  return getSignedUrl(r2Client, command, { expiresIn });
+  return getSignedUrl(s3Client, command, { expiresIn });
 }
 
 export async function deleteObject(
   key: string,
   bucket: BucketType = "public"
 ): Promise<void> {
-  await r2Client.send(
+  await s3Client.send(
     new DeleteObjectCommand({
       Bucket: getBucket(bucket),
       Key: key,

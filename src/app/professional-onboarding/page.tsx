@@ -120,7 +120,7 @@ export default function ProfessionalOnboardingPage() {
   ];
 
   const canProceed = () => {
-    if (step === 1) return form.fullName.trim().length >= 2 && form.phone.trim().length >= 7;
+    if (step === 1) return form.fullName.trim().length >= 2 && form.phone.length === 10 && form.phone.startsWith("9");
     if (step === 2) return form.profession !== "" && form.yearsExperience >= 0;
     if (step === 3) return form.prcLicenseNumber.trim().length >= 3;
     if (step === 4) return form.province && form.city;
@@ -272,15 +272,28 @@ export default function ProfessionalOnboardingPage() {
                   </div>
                   <div>
                     <label className="label">Phone Number</label>
-                    <input
-                      id="pro-phone"
-                      className="input"
-                      type="tel"
-                      placeholder="+63 9XX XXX XXXX"
-                      value={form.phone}
-                      onChange={(e) => update("phone", e.target.value)}
-                      style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", color: "white" }}
-                    />
+                    <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, padding: "0 16px", overflow: "hidden" }}>
+                      <span style={{ color: "rgba(255,255,255,0.8)", fontWeight: 600, fontSize: 15, borderRight: "1px solid rgba(255,255,255,0.1)", paddingRight: 12, marginRight: 12 }}>
+                        +63
+                      </span>
+                      <input
+                        id="pro-phone"
+                        type="tel"
+                        placeholder="9XX XXX XXXX"
+                        value={form.phone.replace(/(\d{3})(\d{0,3})(\d{0,4})/, (m, p1, p2, p3) => [p1, p2, p3].filter(Boolean).join(" "))}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          if (val.length <= 10) update("phone", val);
+                        }}
+                        style={{ flex: 1, background: "transparent", border: "none", color: "white", padding: "14px 0", outline: "none", fontSize: 15 }}
+                      />
+                    </div>
+                    {form.phone && form.phone.length > 0 && !form.phone.startsWith("9") && (
+                      <p style={{ color: "#F87171", fontSize: 13, marginTop: 8 }}>Number must start with 9</p>
+                    )}
+                    {form.phone && form.phone.startsWith("9") && form.phone.length < 10 && (
+                      <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, marginTop: 8 }}>{10 - form.phone.length} more digits needed</p>
+                    )}
                   </div>
                 </div>
               </motion.div>

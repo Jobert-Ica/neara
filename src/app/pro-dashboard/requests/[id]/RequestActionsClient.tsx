@@ -15,6 +15,8 @@ export default function RequestActionsClient({ requestId, creditBalance, isVerif
   const router = useRouter();
   const [loading, setLoading] = useState<"accept" | "decline" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [optimisticState, setOptimisticState] = useState<"accepted" | "declined" | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const CREDITS_TO_ACCEPT = 10;
   const hasEnoughCredits = creditBalance >= CREDITS_TO_ACCEPT;
@@ -24,6 +26,7 @@ export default function RequestActionsClient({ requestId, creditBalance, isVerif
     
     setLoading(action);
     setError(null);
+    setOptimisticState(action === "accept" ? "accepted" : "declined");
 
     try {
       const res = await fetch(`/api/requests/${requestId}`, {
@@ -39,11 +42,32 @@ export default function RequestActionsClient({ requestId, creditBalance, isVerif
 
       router.refresh();
     } catch (err) {
+      setOptimisticState(null);
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(null);
     }
   };
+
+  if (optimisticState === "accepted") {
+    return (
+      <div style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 16, padding: 24, textAlign: "center" }}>
+        <CheckCircle size={32} style={{ color: "#10B981", margin: "0 auto 12px", display: "block" }} />
+        <h3 style={{ color: "white", fontSize: 18, fontWeight: 700, margin: "0 0 8px" }}>Request Accepted!</h3>
+        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, margin: 0 }}>Unlocking client details...</p>
+      </div>
+    );
+  }
+
+  if (optimisticState === "declined") {
+    return (
+      <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 24, textAlign: "center" }}>
+        <XCircle size={32} style={{ color: "rgba(255,255,255,0.2)", margin: "0 auto 12px", display: "block" }} />
+        <h3 style={{ color: "white", fontSize: 18, fontWeight: 700, margin: "0 0 8px" }}>Request Declined</h3>
+        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 14, margin: 0 }}>You have declined this project.</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 24 }}>
@@ -85,71 +109,97 @@ export default function RequestActionsClient({ requestId, creditBalance, isVerif
       )}
 
       <div style={{ display: "flex", gap: 12 }}>
-        <button
-          onClick={() => handleAction("decline")}
-          disabled={loading !== null}
-          style={{
-            flex: 1,
-            padding: "12px",
-            borderRadius: 12,
-            background: "rgba(255,255,255,0.05)",
-            color: "rgba(255,255,255,0.8)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: loading ? "not-allowed" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            transition: "all 150ms ease",
-          }}
-          onMouseEnter={(e) => {
-            if (!loading) {
-              (e.currentTarget).style.background = "rgba(244,63,94,0.1)";
-              (e.currentTarget).style.borderColor = "rgba(244,63,94,0.3)";
-              (e.currentTarget).style.color = "#F87171";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!loading) {
-              (e.currentTarget).style.background = "rgba(255,255,255,0.05)";
-              (e.currentTarget).style.borderColor = "rgba(255,255,255,0.1)";
-              (e.currentTarget).style.color = "rgba(255,255,255,0.8)";
-            }
-          }}
-        >
-          {loading === "decline" ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <XCircle size={16} />}
-          Decline
-        </button>
+        {!showConfirm ? (
+          <>
+            <button
+              onClick={() => handleAction("decline")}
+              disabled={loading !== null}
+              style={{
+                flex: 1,
+                padding: "12px",
+                borderRadius: 12,
+                background: "rgba(255,255,255,0.05)",
+                color: "rgba(255,255,255,0.8)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: loading ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                transition: "all 150ms ease",
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  (e.currentTarget).style.background = "rgba(244,63,94,0.1)";
+                  (e.currentTarget).style.borderColor = "rgba(244,63,94,0.3)";
+                  (e.currentTarget).style.color = "#F87171";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  (e.currentTarget).style.background = "rgba(255,255,255,0.05)";
+                  (e.currentTarget).style.borderColor = "rgba(255,255,255,0.1)";
+                  (e.currentTarget).style.color = "rgba(255,255,255,0.8)";
+                }
+              }}
+            >
+              {loading === "decline" ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <XCircle size={16} />}
+              Decline
+            </button>
 
-        <button
-          onClick={() => handleAction("accept")}
-          disabled={loading !== null || !isVerified || !hasEnoughCredits}
-          style={{
-            flex: 2,
-            padding: "12px",
-            borderRadius: 12,
-            background: isVerified && hasEnoughCredits ? "#10B981" : "rgba(255,255,255,0.1)",
-            color: isVerified && hasEnoughCredits ? "white" : "rgba(255,255,255,0.3)",
-            border: "none",
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: (loading !== null || !isVerified || !hasEnoughCredits) ? "not-allowed" : "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            transition: "all 150ms ease",
-          }}
-        >
-          {loading === "accept" ? (
-            <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
-          ) : (
-            <CheckCircle size={18} />
-          )}
-          {loading === "accept" ? "Processing..." : "Accept & View Details"}
-        </button>
+            <button
+              onClick={() => setShowConfirm(true)}
+              disabled={loading !== null || !isVerified || !hasEnoughCredits}
+              style={{
+                flex: 2,
+                padding: "12px",
+                borderRadius: 12,
+                background: isVerified && hasEnoughCredits ? "#10B981" : "rgba(255,255,255,0.1)",
+                color: isVerified && hasEnoughCredits ? "white" : "rgba(255,255,255,0.3)",
+                border: "none",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: (loading !== null || !isVerified || !hasEnoughCredits) ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                transition: "all 150ms ease",
+              }}
+            >
+              <CheckCircle size={18} />
+              Accept Request
+            </button>
+          </>
+        ) : (
+          <div style={{ width: "100%", background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 12, padding: 16 }}>
+            <p style={{ color: "white", fontSize: 14, margin: "0 0 16px", textAlign: "center", fontWeight: 600 }}>
+              Are you sure? This will deduct {CREDITS_TO_ACCEPT} credits.
+            </p>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() => setShowConfirm(false)}
+                style={{
+                  flex: 1, padding: "10px", borderRadius: 8, background: "rgba(255,255,255,0.1)", color: "white", border: "none", cursor: "pointer", fontWeight: 600
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleAction("accept")}
+                disabled={loading !== null}
+                style={{
+                  flex: 1, padding: "10px", borderRadius: 8, background: "#10B981", color: "white", border: "none", cursor: loading ? "not-allowed" : "pointer", fontWeight: 700, display: "flex", justifyContent: "center", gap: 8
+                }}
+              >
+                {loading === "accept" ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <CheckCircle size={16} />}
+                Confirm
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

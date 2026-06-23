@@ -23,6 +23,14 @@ const TIMELINES = [
   "Flexible",
 ];
 
+const BUDGET_RANGES = [
+  { label: "Under ₱100,000", min: 0, max: 100000 },
+  { label: "₱100,000 - ₱500,000", min: 100000, max: 500000 },
+  { label: "₱500,000 - ₱1,000,000", min: 500000, max: 1000000 },
+  { label: "₱1,000,000 - ₱5,000,000", min: 1000000, max: 5000000 },
+  { label: "Above ₱5,000,000", min: 5000000, max: null },
+];
+
 export default function NewProjectPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -31,8 +39,7 @@ export default function NewProjectPage() {
     title: "",
     description: "",
     professionNeeded: "",
-    budgetMin: "",
-    budgetMax: "",
+    budgetIndex: "",
     province: "",
     city: "",
     timeline: "",
@@ -49,14 +56,16 @@ export default function NewProjectPage() {
     setError(null);
 
     try {
+      const selectedBudget = form.budgetIndex ? BUDGET_RANGES[parseInt(form.budgetIndex)] : null;
+
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: form.title,
           description: form.description,
-          budgetMin: form.budgetMin ? parseFloat(form.budgetMin) : null,
-          budgetMax: form.budgetMax ? parseFloat(form.budgetMax) : null,
+          budgetMin: selectedBudget?.min ?? null,
+          budgetMax: selectedBudget?.max ?? null,
           province: form.province || null,
           city: form.city || null,
           timeline: form.timeline || null,
@@ -131,7 +140,7 @@ export default function NewProjectPage() {
                 id="project-title"
                 className="input"
                 type="text"
-                placeholder="e.g. Design and build a 2-story residential house"
+                placeholder="Example: Design and build a 2-story minimalist home in Taguig"
                 value={form.title}
                 onChange={(e) => update("title", e.target.value)}
                 required
@@ -149,7 +158,7 @@ export default function NewProjectPage() {
               <textarea
                 id="project-description"
                 className="textarea"
-                placeholder="Describe the scope of work, specifications, requirements, and anything else professionals need to know..."
+                placeholder="Example: I am looking for an architect to design a modern 3-bedroom home on a 200sqm lot. Needs to include earthquake-resistant structural planning and a roof deck..."
                 value={form.description}
                 onChange={(e) => update("description", e.target.value)}
                 rows={6}
@@ -184,31 +193,22 @@ export default function NewProjectPage() {
             <div>
               <label className="label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <DollarSign size={13} />
-                Budget Range (₱) — Optional
+                Estimated Budget — Optional
               </label>
-              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <input
-                  id="project-budget-min"
-                  className="input"
-                  type="number"
-                  placeholder="Min (e.g. 500000)"
-                  value={form.budgetMin}
-                  onChange={(e) => update("budgetMin", e.target.value)}
-                  min={0}
-                  style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", color: "white" }}
-                />
-                <span style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>to</span>
-                <input
-                  id="project-budget-max"
-                  className="input"
-                  type="number"
-                  placeholder="Max (e.g. 1500000)"
-                  value={form.budgetMax}
-                  onChange={(e) => update("budgetMax", e.target.value)}
-                  min={0}
-                  style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", color: "white" }}
-                />
-              </div>
+              <select
+                id="project-budget"
+                className="select"
+                value={form.budgetIndex}
+                onChange={(e) => update("budgetIndex", e.target.value)}
+                style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", color: form.budgetIndex ? "white" : "rgba(255,255,255,0.3)" }}
+              >
+                <option value="">I'm not sure yet</option>
+                {BUDGET_RANGES.map((b, idx) => (
+                  <option key={idx} value={idx.toString()} style={{ background: "#0f1b3d", color: "white" }}>
+                    {b.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Location */}

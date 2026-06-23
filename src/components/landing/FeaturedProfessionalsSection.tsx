@@ -28,16 +28,6 @@ const PROFESSION_LABELS: Record<string, string> = {
   INTERIOR_DESIGNER: "Interior Designer",
 };
 
-// Demo professionals for empty DB
-const DEMO_PROFESSIONALS: Professional[] = [
-  { id: "demo-1", profession: "ARCHITECT", city: "Makati", province: "Metro Manila (NCR)", totalRating: 4.9, reviewCount: 47, yearsExperience: 12, completedProjects: 38, user: { name: "Maria Santos", image: null } },
-  { id: "demo-2", profession: "CIVIL_ENGINEER", city: "Cebu City", province: "Cebu", totalRating: 4.8, reviewCount: 33, yearsExperience: 8, completedProjects: 25, user: { name: "Jose Reyes", image: null } },
-  { id: "demo-3", profession: "INTERIOR_DESIGNER", city: "Quezon City", province: "Metro Manila (NCR)", totalRating: 5.0, reviewCount: 21, yearsExperience: 6, completedProjects: 19, user: { name: "Ana Cruz", image: null } },
-  { id: "demo-4", profession: "CONTRACTOR", city: "Davao City", province: "Davao del Norte", totalRating: 4.7, reviewCount: 58, yearsExperience: 15, completedProjects: 61, user: { name: "Ramon Torres", image: null } },
-  { id: "demo-5", profession: "STRUCTURAL_ENGINEER", city: "Taguig", province: "Metro Manila (NCR)", totalRating: 4.9, reviewCount: 29, yearsExperience: 10, completedProjects: 32, user: { name: "Liza Flores", image: null } },
-  { id: "demo-6", profession: "ELECTRICAL_ENGINEER", city: "Iloilo City", province: "Iloilo", totalRating: 4.8, reviewCount: 17, yearsExperience: 7, completedProjects: 14, user: { name: "Marco Lim", image: null } },
-];
-
 const AVATAR_COLORS = ["#2563EB", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#F97316"];
 
 export default function FeaturedProfessionalsSection({
@@ -48,7 +38,11 @@ export default function FeaturedProfessionalsSection({
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
-  const display = professionals.length > 0 ? professionals : DEMO_PROFESSIONALS;
+  const display = professionals;
+
+  if (display.length === 0) {
+    return null; // Don't show the section if there are no real professionals yet
+  }
 
   return (
     <section ref={ref} style={{ background: "#0a1628", padding: "100px 0" }}>
@@ -179,6 +173,7 @@ export default function FeaturedProfessionalsSection({
                         )}
                         {/* Verified indicator */}
                         <div
+                          title={`PRC Verified on ${new Date(pro.verifiedAt || pro.createdAt).toLocaleDateString()}`}
                           style={{
                             position: "absolute",
                             bottom: -2,

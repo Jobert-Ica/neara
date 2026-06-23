@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createInvoice } from "@/lib/xendit";
 import { z } from "zod";
+import { rateLimit } from "@/lib/rate-limit";
 
 const PACKAGES = [
   { id: "basic", credits: 50, price: 1000 },
@@ -18,6 +19,17 @@ export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate Limiting: max 5 checkout requests per minute
+  const ip = request.headers.get("x-forwarded-for") || "unknown";
+  const { success, remaining, reset } = rateLimit(ip, "checkout", { limit: 5, windowMs: 60000 });
+  
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many checkout requests. Please try again later." }, 
+      { status: 429, headers: { "X-RateLimit-Remaining": remaining.toString(), "X-RateLimit-Reset": reset.toString() } }
+    );
   }
 
   const profile = await prisma.professionalProfile.findUnique({

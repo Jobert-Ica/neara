@@ -11,9 +11,12 @@ const PACKAGES = [
 
 export default function CreditsClient({ userEmail }: { userEmail: string }) {
   const [loading, setLoading] = useState<string | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<typeof PACKAGES[0] | null>(null);
 
-  const handleBuy = async (pkg: typeof PACKAGES[0]) => {
-    setLoading(pkg.id);
+  const handleConfirmBuy = async () => {
+    if (!selectedPackage) return;
+    setLoading(selectedPackage.id);
+    const pkg = selectedPackage;
     try {
       // Create invoice via our internal API
       const res = await fetch("/api/credits/checkout", {
@@ -73,7 +76,7 @@ export default function CreditsClient({ userEmail }: { userEmail: string }) {
 
           <div style={{ marginTop: "auto" }}>
             <button
-              onClick={() => handleBuy(pkg)}
+              onClick={() => setSelectedPackage(pkg)}
               disabled={loading !== null}
               style={{
                 width: "100%",

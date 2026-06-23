@@ -4,7 +4,7 @@ import { MapPin, Mail, Phone } from "lucide-react";
 const FOOTER_LINKS = {
   Platform: [
     { label: "Browse Professionals", href: "/browse" },
-    { label: "Post a Project", href: "/projects/new" },
+    { label: "Post a Project", href: "/dashboard/projects/new" },
     { label: "How It Works", href: "/#how-it-works" },
     { label: "Pricing", href: "/#pricing" },
   ],

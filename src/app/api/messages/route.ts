@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { rateLimit } from "@/lib/rate-limit";
 
 const messageSchema = z.object({
   conversationId: z.string(),
@@ -12,6 +13,17 @@ export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate Limiting: max 20 messages per minute
+  const ip = request.headers.get("x-forwarded-for") || "unknown";
+  const { success, remaining, reset } = rateLimit(ip, "send_message", { limit: 20, windowMs: 60000 });
+  
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many messages. Please try again later." }, 
+      { status: 429, headers: { "X-RateLimit-Remaining": remaining.toString(), "X-RateLimit-Reset": reset.toString() } }
+    );
   }
 
   const userId = session.user.id;
